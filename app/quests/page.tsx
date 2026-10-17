@@ -7,6 +7,7 @@ import {
   REST_DAY_POINTS,
   USER_SIDE_QUESTS_PER_DAY,
 } from "@/lib/game/constants";
+import { getQuestline } from "@/lib/game/skill-questlines";
 import { weekStart } from "@/lib/game/dates";
 import { canTakeRestDay, isRestDay, restDayThisWeek } from "@/lib/game/rest-day";
 import { devToolsFlagOn } from "@/lib/dev-tools";
@@ -34,7 +35,9 @@ async function Quests() {
   const supabase = await createClient();
   const day = await prepareQuestDay(supabase);
   if (!day) redirect("/onboarding");
-  const { today, quests, restDays, rank, sick } = day;
+  const { today, restDays, weeklyRestDays, cards, rank, sick } = day;
+  // A rerolled quest is replaced by its swap, so it is not shown.
+  const quests = day.quests.filter((q) => q.status !== "rerolled");
 
   const monday = weekStart(today);
   const dailies = quests.filter((q) => q.type === "daily" && q.issuedOn === today);
@@ -46,10 +49,21 @@ async function Quests() {
       ((q.source === "system" && q.issuedOn === today) ||
         (q.source === "user" && ((q.status === "open" && q.dueOn >= today) || clearedToday(q)))),
   );
+  const skills = quests.filter(
+    (q) => q.type === "skill" && ((q.status === "open" && q.dueOn >= today) || clearedToday(q)),
+  );
+  const questlineOf = (cardId: string | null) => {
+    const card = cards.find((c) => c.id === cardId);
+    const questline = card?.questlineId ? getQuestline(card.questlineId) : undefined;
+    return card && questline ? { card, questline } : null;
+  };
+  const doubleOn = cards.some((c) => c.kind === "double_xp" && c.status === "active");
+  const shieldUp = cards.some((c) => c.kind === "shield" && c.status === "active");
   const cleared = quests.filter(clearedToday).length;
   const madeToday = quests.filter((q) => q.source === "user" && q.issuedOn === today).length;
   const restToday = isRestDay(restDays, today);
-  const restTaken = restDayThisWeek(restDays, today);
+  const weeklyRestToday = isRestDay(weeklyRestDays, today);
+  const restTaken = restDayThisWeek(weeklyRestDays, today);
   const devTester = devToolsFlagOn()
     ? (await supabase.from("dev_testers").select("user_id").maybeSingle()).data
     : null;
@@ -62,18 +76,34 @@ async function Quests() {
         </p>
       )}
 
+      {(doubleOn || shieldUp) && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-semibold text-gold">
+          {doubleOn && <span>Double XP active: your next quest counts twice</span>}
+          {shieldUp && <span>Shield up: the next day you miss has no penalty</span>}
+        </div>
+      )}
+
       <section className="flex flex-col gap-3">
         <SectionTitle aside={`${cleared} cleared today`}>TODAY&apos;S QUESTS</SectionTitle>
         {restToday ? (
           <p className="rounded-xl border border-gold/60 bg-panel p-4 text-sm leading-normal">
-            <span className="font-display font-semibold tracking-wider text-gold">REST DAY. </span>
-            Recovery counts as progress: +{REST_DAY_POINTS} Endurance. No daily quests today.
+            {weeklyRestToday ? (
+              <>
+                <span className="font-display font-semibold tracking-wider text-gold">REST DAY. </span>
+                Recovery counts as progress: +{REST_DAY_POINTS} Endurance. No daily quests today.
+              </>
+            ) : (
+              <>
+                <span className="font-display font-semibold tracking-wider text-gold">REST CARD. </span>
+                Today&apos;s daily quests are rested, with no penalty.
+              </>
+            )}
           </p>
         ) : (
           dailies.map((q) => <QuestCard key={q.id} quest={q} />)
         )}
         {!restToday &&
-          (canTakeRestDay(restDays, today) ? (
+          (canTakeRestDay(weeklyRestDays, today) ? (
             <RestDayButton points={REST_DAY_POINTS} />
           ) : (
             restTaken && (
@@ -88,6 +118,19 @@ async function Quests() {
         <section className="flex flex-col gap-3">
           <SectionTitle aside="Due Sunday">MAIN QUEST</SectionTitle>
           <QuestCard quest={main} />
+        </section>
+      )}
+
+      {skills.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <SectionTitle aside="One step a day">SKILL QUESTLINES</SectionTitle>
+          {skills.map((q) => {
+            const line = questlineOf(q.cardId);
+            const note = line
+              ? `${line.questline.name} · step ${Math.min(line.card.questlineStep + (q.status === "open" ? 1 : 0), line.questline.steps.length)} of ${line.questline.steps.length}${q.status === "open" ? ` · open until ${weekday(q.dueOn)}` : ""}`
+              : undefined;
+            return <QuestCard key={q.id} quest={q} note={note} />;
+          })}
         </section>
       )}
 

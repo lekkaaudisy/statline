@@ -4,6 +4,7 @@
 // A few of these are repeated as safety checks in the database
 // (supabase/migrations). If you change one here, change it there too.
 import type { Grade } from "./stats";
+import type { CardTier } from "./tiers";
 
 // Cumulative stat points needed for each grade. The next step up, SR (420),
 // arrives with the Rare range after the MVP.
@@ -174,3 +175,47 @@ export const QUEST_TITLE_MAX_LENGTH = 200;
 // buttons, and how far back "Make inactive" moves the last active day.
 export const DEV_POINT_STEPS = [5, 20, -20] as const;
 export const DEV_INACTIVE_DAYS = 10;
+
+// ---------------------------------------------------------------------------
+// Cards (Slice 5)
+
+// The hand holds at most this many cards. Proof cards are kept apart and do
+// not count toward it.
+export const HAND_SIZE = 10;
+
+// Double XP multiplies the next cleared quest's points (after the proof share).
+export const DOUBLE_XP_MULTIPLIER = 2;
+
+// A failed main quest costs one held card. With no card to lose, its stat
+// loses this many points instead, never below the decay floor.
+export const MAIN_FAIL_STAT_DENT = 5;
+
+// Skill questlines open at the same time, at most.
+export const MAX_OPEN_QUESTLINES = 3;
+
+// A Skill questline step stays open this many days (today included). A step
+// that runs out is simply given again, with no penalty.
+export const SKILL_STEP_DAYS = 3;
+
+// Reward treats the user writes: length in characters.
+export const REWARD_TREAT_MIN_LENGTH = 3;
+export const REWARD_TREAT_MAX_LENGTH = 60;
+
+// Card drop chances out of 100 at each tier (tier = quest difficulty rank).
+// Reward needs a treat set for the tier and Skill needs a questline left to
+// open; when one cannot drop, its share goes to the others. Master and
+// Challenger (ranks 6 and 7) are not used in the MVP.
+const TOP_TIER_DROPS = { reroll: 13, rest: 10, double_xp: 13, shield: 10, reward: 29, skill: 25 };
+export const CARD_DROP_WEIGHTS: Record<
+  CardTier,
+  Record<"reroll" | "rest" | "double_xp" | "shield" | "reward" | "skill", number>
+> = {
+  Bronze: { reroll: 20, rest: 15, double_xp: 20, shield: 15, reward: 30, skill: 0 },
+  Silver: { reroll: 18, rest: 13, double_xp: 17, shield: 12, reward: 28, skill: 12 },
+  Gold: { reroll: 15, rest: 12, double_xp: 15, shield: 12, reward: 28, skill: 18 },
+  Platinum: { reroll: 14, rest: 11, double_xp: 14, shield: 11, reward: 28, skill: 22 },
+  Diamond: TOP_TIER_DROPS,
+  Master: TOP_TIER_DROPS,
+  Challenger: TOP_TIER_DROPS,
+};
+

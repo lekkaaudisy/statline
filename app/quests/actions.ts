@@ -2,21 +2,29 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import { availableQuestlines, rollCard } from "@/lib/game/card-drops";
+import { withDoubleXp } from "@/lib/game/card-effects";
+import { isClassId } from "@/lib/game/classes";
 import { toIsoDate } from "@/lib/game/dates";
 import { applyDecay } from "@/lib/game/decay";
 import { pointsToGrade } from "@/lib/game/grades";
 import { isSelectableProof, proofError, proofPoints } from "@/lib/game/proof";
 import { canCreateSideQuest, validateSideQuest } from "@/lib/game/quests";
-import { canTakeRestDay } from "@/lib/game/rest-day";
+import { handCards } from "@/lib/game/hand";
+import { seededRandom } from "@/lib/game/random";
+import { canTakeRestDay, isRestDay } from "@/lib/game/rest-day";
 import { addPoints } from "@/lib/game/stat-state";
 import type { EarnedStat, Grade } from "@/lib/game/stats";
+import { loadCards, loadTreats } from "@/lib/supabase/cards";
 import { loadStats } from "@/lib/supabase/player";
 import {
   currentUserId,
+  loadRestDays,
   QUEST_COLUMNS,
   saveRestDay,
   toQuest,
 } from "@/lib/supabase/quests";
+import { cardView, type CardView } from "../cards/card-view";
 import { createClient } from "@/lib/supabase/server";
 
 const SAVE_FAILED = "The System could not save that. Try again.";
@@ -34,11 +42,16 @@ export type CompleteResult =
       stat: EarnedStat;
       before: Grade;
       after: Grade;
+      double: boolean;
+      // The card the quest paid out. "pending" means the hand was full:
+      // `hand` then holds the cards it could be swapped for.
+      card: CardView;
+      hand: CardView[];
     }
   | { ok: false; error: string };
 
-// Completes a quest with proof. Photos are uploaded from the phone first, so
-// this only receives the photo's path.
+// Completes a quest with proof and pays out one card. Photos are uploaded
+// from the phone first, so this only receives the photo's path.
 export async function completeQuest(input: unknown): Promise<CompleteResult> {
   if (typeof input !== "object" || input === null) {
     return { ok: false, error: SAVE_FAILED };
@@ -71,31 +84,54 @@ export async function completeQuest(input: unknown): Promise<CompleteResult> {
   const problem = proofError(submission, quest, userId);
   if (problem) return { ok: false, error: problem };
 
-  const [{ earned }, { data: profile }] = await Promise.all([
+  const [{ earned }, { data: profile }, cards, treats] = await Promise.all([
     loadStats(supabase),
-    supabase.from("profiles").select("sick_since").maybeSingle(),
+    supabase.from("profiles").select("sick_since, main_class, second_class").maybeSingle(),
+    loadCards(supabase),
+    loadTreats(supabase),
   ]);
-  const sickSince: string | null = profile?.sick_since ?? null;
+  if (!profile || !isClassId(profile.main_class)) return { ok: false, error: SAVE_FAILED };
+  const sickSince: string | null = profile.sick_since ?? null;
   const stat = earned[quest.stat];
-  const awarded = proofPoints(quest.gain, proof);
+  const double = cards.some((c) => c.kind === "double_xp" && c.status === "active");
+  const awarded = withDoubleXp(proofPoints(quest.gain, proof), double);
   const before = pointsToGrade(applyDecay({ ...stat, today, sickSince }));
   const next = addPoints(stat, awarded, today, sickSince);
 
-  const { error } = await supabase.rpc("complete_quest", {
+  // The same quest always rolls the same card, so a retry cannot reroll it.
+  const drop = rollCard({
+    rank: quest.rank,
+    questType: quest.type,
+    treats,
+    questlines: availableQuestlines(
+      profile.main_class,
+      isClassId(profile.second_class) ? profile.second_class : null,
+      cards,
+    ),
+    random: seededRandom(`card:${quest.id}`),
+  });
+
+  const { data, error } = await supabase.rpc("complete_quest", {
     p_quest_id: quest.id,
     p_proof_type: proof,
     p_summary: cleanSummary,
     p_photo_path: cleanPhoto,
     p_new_points: next.points,
+    p_card_kind: drop.kind,
+    p_questline_id: drop.questlineId,
   });
   if (error) return { ok: false, error: friendly(error) };
+  const saved = data as { awarded: number; card_id: string; card_status: "held" | "pending" };
 
   return {
     ok: true,
-    awarded,
+    awarded: saved.awarded,
     stat: quest.stat,
     before,
     after: pointsToGrade(next.points),
+    double,
+    card: cardView({ ...drop, id: saved.card_id, status: saved.card_status }),
+    hand: saved.card_status === "pending" ? handCards(cards).map(cardView) : [],
   };
 }
 
@@ -109,11 +145,11 @@ export async function takeRestDay(): Promise<ActionState> {
     .select("sick_since")
     .maybeSingle();
   const today = toIsoDate(new Date());
-  const { data: rows } = await supabase.from("rest_days").select("rest_on");
-  const restDays = ((rows ?? []) as { rest_on: string }[]).map((r) => r.rest_on);
-  if (!canTakeRestDay(restDays, today)) {
+  const restDays = await loadRestDays(supabase, today);
+  if (!canTakeRestDay(restDays.weekly, today)) {
     return { error: "You already took a rest day this week." };
   }
+  if (isRestDay(restDays.all, today)) return { error: "Today is already a rest day." };
 
   const { error } = await saveRestDay(supabase, today, profile?.sick_since ?? null);
   if (error) return { error: SAVE_FAILED };

@@ -1,5 +1,4 @@
-// Card tier = quest difficulty rank. Cards themselves arrive in Slice 5;
-// quests already show the tier they will pay out.
+// Card tier = quest difficulty rank.
 
 export const CARD_TIERS = [
   "Bronze",

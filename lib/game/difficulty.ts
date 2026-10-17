@@ -16,7 +16,7 @@ import {
 import { weekStart } from "./dates";
 import type { EarnedStat } from "./stats";
 
-export type QuestType = "daily" | "main" | "side" | "skill";
+export type QuestType = "daily" | "main" | "side" | "skill" | "placement";
 
 export function clampRank(rank: number): number {
   return Math.min(MAX_DIFFICULTY_RANK, Math.max(MIN_DIFFICULTY_RANK, rank));

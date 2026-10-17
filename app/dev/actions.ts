@@ -1,9 +1,13 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { DEV_INACTIVE_DAYS, DEV_POINT_STEPS } from "@/lib/game/constants";
+import {
+  DEV_IDLE_DAYS,
+  DEV_INACTIVE_DAYS,
+  DEV_POINT_STEPS,
+  DEV_STEADY_DAYS,
+} from "@/lib/game/constants";
 import { addDays, toIsoDate } from "@/lib/game/dates";
-import { maxGrade, pointsToGrade } from "@/lib/game/grades";
 import {
   addPoints,
   resumeAfterSick,
@@ -115,25 +119,6 @@ export async function devToggleSick(): Promise<DevResult> {
   );
 }
 
-// Calibrates every earned stat, or makes them all provisional again.
-export async function devToggleProvisional(): Promise<DevResult> {
-  return change((earned, sickSince) => {
-    const anyProvisional = EARNED_STATS.some((s) => earned[s].provisional);
-    return {
-      earned: mapStats(earned, (s) =>
-        anyProvisional
-          ? {
-              ...s,
-              provisional: false,
-              bestGrade: maxGrade(s.bestGrade ?? "F", pointsToGrade(s.points)),
-            }
-          : { ...s, provisional: true, bestGrade: null },
-      ),
-      sickSince,
-    };
-  });
-}
-
 // Pretends a day has passed: moves quest, rest day and activity dates back
 // one day, so the next visit is a new quest day.
 export async function devPassDay(): Promise<DevResult> {
@@ -143,4 +128,33 @@ export async function devPassDay(): Promise<DevResult> {
   if (error) return { error: error.message };
   refresh();
   return {};
+}
+
+async function callRpc(name: string, args?: Record<string, unknown>): Promise<DevResult> {
+  if (!devToolsFlagOn()) return { error: "Developer tools are off." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc(name, args);
+  if (error) return { error: error.message };
+  refresh();
+  return {};
+}
+
+// Fast-forward: idle days pass with nothing done; steady days are each
+// marked active (as if a quest was cleared) before they pass.
+export async function devPassDays(kind: unknown): Promise<DevResult> {
+  if (kind !== "idle" && kind !== "steady") return { error: "Unknown fast-forward." };
+  return callRpc("dev_pass_days", {
+    p_days: kind === "idle" ? DEV_IDLE_DAYS : DEV_STEADY_DAYS,
+    p_steady: kind === "steady",
+  });
+}
+
+// Starts the first calibration week again from today.
+export async function devRestartCalibration(): Promise<DevResult> {
+  return callRpc("dev_restart_calibration");
+}
+
+// Makes Awakening possible again (clears active days too).
+export async function devResetAwakening(): Promise<DevResult> {
+  return callRpc("dev_reset_awakening");
 }

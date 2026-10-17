@@ -219,3 +219,66 @@ export const CARD_DROP_WEIGHTS: Record<
   Challenger: TOP_TIER_DROPS,
 };
 
+
+// ---------------------------------------------------------------------------
+// Calibration (Slice 6)
+
+// The calibration week: days 1 to 7 from the start. The result shows on day 8.
+export const CALIBRATION_DAYS = 7;
+
+// Placement quests in the calibration week, for each daily time choice. The
+// first four test one stat each; the rest come from the Class goal.
+export const PLACEMENT_QUESTS_BY_MINUTES: Record<
+  (typeof DAILY_MINUTES_OPTIONS)[number],
+  number
+> = { 15: 5, 30: 6, 60: 7 };
+
+// A placement quest's difficulty rank tests the grade it is checking. Never
+// above 4, so honour proof always stays allowed.
+export const PLACEMENT_RANK_BY_GRADE: Record<Grade, number> = {
+  F: 1,
+  E: 1,
+  D: 2,
+  C: 3,
+  B: 4,
+  A: 4,
+  S: 4,
+  SS: 4,
+  SSS: 4,
+};
+
+// Settling a grade on day 8. Each counted quest scores its proof weight
+// (PROOF_WEIGHTS) if cleared, 0 if missed; the proof score is the average.
+// Skipped placement quests are not counted. With fewer than the minimum
+// counted, there is not enough proof and the grade stays.
+export const CALIBRATION_MIN_QUESTS = 2;
+export const CALIBRATION_UP_SCORE = 0.7;
+export const CALIBRATION_DOWN_SCORE = 0.35;
+// A grade moves at most this many steps when it settles.
+export const CALIBRATION_MAX_STEPS = 1;
+
+// One season, in days. Recalibration is allowed once per season.
+export const SEASON_DAYS = 84;
+
+// The Proof card for finishing calibration.
+export const DAY_ONE_TIER: CardTier = "Bronze";
+
+// ---------------------------------------------------------------------------
+// Awakening (Slice 6)
+
+// At least this many inactive days in a row, then a window of steady days
+// with at least this many active days in it. Rest days count as active.
+export const AWAKENING_INACTIVE_DAYS = 7;
+export const AWAKENING_STEADY_DAYS = 14;
+export const AWAKENING_MIN_ACTIVE_DAYS = 12;
+
+// Points added to each of the four earned stats (never Potential).
+export const AWAKENING_STAT_BOOST = 10;
+
+// The Proof card for Awakening.
+export const EXCLUSIVE_TIER: CardTier = "Platinum";
+
+// Developer-only fast-forward buttons: idle days (nothing done) and steady
+// days (each day marked active before it passes).
+export const DEV_IDLE_DAYS = 7;
+export const DEV_STEADY_DAYS = 14;

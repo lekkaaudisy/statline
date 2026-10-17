@@ -114,6 +114,36 @@ describe("daily quests", () => {
     expect(quests.filter((q) => q.type === "side")).toHaveLength(1);
   });
 
+  it("gives one fewer daily on a calibration day, aimed away from the placement stat", () => {
+    for (const minutes of [15, 30, 60] as const) {
+      const quests = planQuests({
+        seed: USER,
+        today: MONDAY,
+        player: player({ dailyMinutes: minutes }),
+        existing: [],
+        restDay: false,
+        placementStat: "endurance",
+      });
+      const dailies = quests.filter((q) => q.type === "daily");
+      expect(dailies).toHaveLength({ 15: 0, 30: 1, 60: 2 }[minutes]);
+      // Endurance is the weakest stat, but the placement quest already trains it.
+      for (const q of dailies) expect(q.stat).not.toBe("endurance");
+      expect(quests.filter((q) => q.type === "side")).toHaveLength(1);
+    }
+  });
+
+  it("keeps the one-strength-quest-a-day cap with a strength placement quest", () => {
+    const quests = planQuests({
+      seed: USER,
+      today: MONDAY,
+      player: player({ dailyMinutes: 60, points: { strength: 0, speed: 200, endurance: 200, intelligence: 200 } }),
+      existing: [],
+      restDay: false,
+      placementStat: "strength",
+    });
+    expect(quests.filter((q) => q.type !== "main" && q.stat === "strength")).toHaveLength(0);
+  });
+
   it("is due the same day, at the player's rank, with the rank's points", () => {
     const quests = planQuests({ seed: USER, today: MONDAY, player: player({ rank: 3 }), existing: [], restDay: false });
     for (const q of quests.filter((q) => q.type === "daily")) {

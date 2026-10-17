@@ -47,7 +47,7 @@ export type DailyMinutes = keyof typeof DAILY_QUESTS_BY_MINUTES;
 
 // A quest ready to be saved.
 export type QuestDraft = {
-  type: Exclude<QuestType, "skill">;
+  type: Exclude<QuestType, "skill" | "placement">;
   templateId: string;
   title: string;
   stat: EarnedStat;
@@ -192,7 +192,8 @@ function count(tally: Tally, choice: { countsForClass: boolean }) {
 }
 
 // Today's daily quests (none on the rest day) and the optional System side
-// quest. Updates `tally` as it goes.
+// quest. Updates `tally` as it goes. On a calibration day, today's placement
+// quest takes one daily quest's place and counts as today's stat for it.
 export function generateDayQuests(
   player: Player,
   today: string,
@@ -200,12 +201,14 @@ export function generateDayQuests(
   avoid: ReadonlySet<string>,
   random: Random,
   restDay: boolean,
+  placementStat: EarnedStat | null = null,
 ): QuestDraft[] {
   const dailyCount = DAILY_QUESTS_BY_MINUTES[player.dailyMinutes];
   const available = player.dailyMinutes / dailyCount;
   const order = statsByWeakness(player.points);
   const used = new Set(avoid);
-  const statsToday: EarnedStat[] = [];
+  const statsToday: EarnedStat[] = placementStat ? [placementStat] : [];
+  const dailiesToday = placementStat ? dailyCount - 1 : dailyCount;
   const quests: QuestDraft[] = [];
 
   function targets(): EarnedStat[] {
@@ -226,7 +229,7 @@ export function generateDayQuests(
   }
 
   if (!restDay) {
-    for (let slot = 1; slot <= dailyCount; slot++) add("daily", slot, slot === 1);
+    for (let slot = 1; slot <= dailiesToday; slot++) add("daily", slot, slot === 1);
   }
   for (let slot = 1; slot <= SYSTEM_SIDE_QUESTS_PER_DAY; slot++) add("side", slot, true);
   return quests;
@@ -270,14 +273,17 @@ export function generateMainQuest(
 // Everything the System still owes the user today: the week's main quest if
 // it has not been issued, and today's daily and side quests if they have
 // not. `seed` (the user id) makes the choice the same every time.
+// `placementStat` is the stat of today's placement quest, in the
+// calibration week.
 export function planQuests(input: {
   seed: string;
   today: string;
   player: Player;
   existing: readonly ExistingQuest[];
   restDay: boolean;
+  placementStat?: EarnedStat | null;
 }): QuestDraft[] {
-  const { seed, today, player, existing, restDay } = input;
+  const { seed, today, player, existing, restDay, placementStat = null } = input;
   const monday = weekStart(today);
   const system = existing.filter((q) => q.source === "system");
   const thisWeek = system.filter((q) => q.issuedOn >= monday);
@@ -304,7 +310,15 @@ export function planQuests(input: {
         .flatMap((q) => (q.templateId ? [q.templateId] : [])),
     );
     quests.push(
-      ...generateDayQuests(player, today, tally, avoid, seededRandom(`${seed}:${today}`), restDay),
+      ...generateDayQuests(
+        player,
+        today,
+        tally,
+        avoid,
+        seededRandom(`${seed}:${today}`),
+        restDay,
+        placementStat,
+      ),
     );
   }
   return quests;

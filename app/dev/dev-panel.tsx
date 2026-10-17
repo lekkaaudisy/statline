@@ -1,13 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { DEV_INACTIVE_DAYS, DEV_POINT_STEPS } from "@/lib/game/constants";
+import {
+  DEV_IDLE_DAYS,
+  DEV_INACTIVE_DAYS,
+  DEV_POINT_STEPS,
+  DEV_STEADY_DAYS,
+} from "@/lib/game/constants";
 import { EARNED_STATS, STAT_INFO } from "@/lib/game/stats";
 import {
   devAddPoints,
   devMakeInactive,
   devPassDay,
-  devToggleProvisional,
+  devPassDays,
+  devResetAwakening,
+  devRestartCalibration,
   devToggleSick,
   type DevResult,
 } from "./actions";
@@ -17,13 +24,7 @@ const buttonClass =
 
 // Test controls for developers only. Shown under the status window when
 // NEXT_PUBLIC_DEV_TOOLS=true and the account is in dev_testers.
-export function DevPanel({
-  sick,
-  provisional,
-}: {
-  sick: boolean;
-  provisional: boolean;
-}) {
+export function DevPanel({ sick }: { sick: boolean }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -98,9 +99,33 @@ export function DevPanel({
           type="button"
           disabled={pending}
           className={buttonClass}
-          onClick={() => run(devToggleProvisional)}
+          onClick={() => run(() => devPassDays("idle"))}
         >
-          {provisional ? "Mark calibrated" : "Make provisional again"}
+          Pass {DEV_IDLE_DAYS} idle days (nothing done)
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          className={buttonClass}
+          onClick={() => run(() => devPassDays("steady"))}
+        >
+          Pass {DEV_STEADY_DAYS} steady days (each day active)
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          className={buttonClass}
+          onClick={() => run(devRestartCalibration)}
+        >
+          Restart calibration week from today
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          className={buttonClass}
+          onClick={() => run(devResetAwakening)}
+        >
+          Reset Awakening
         </button>
       </div>
 

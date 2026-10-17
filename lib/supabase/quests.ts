@@ -20,6 +20,7 @@ import { mainQuestPenalty } from "@/lib/game/main-penalty";
 import { isRestDay, shouldAutoRest } from "@/lib/game/rest-day";
 import { addPoints } from "@/lib/game/stat-state";
 import { EARNED_STATS, type EarnedStat } from "@/lib/game/stats";
+import { preparePlacements, type CalibrationWeek } from "./calibration";
 import { loadCards } from "./cards";
 import { loadStats } from "./player";
 import type { createClient } from "./server";
@@ -183,6 +184,8 @@ export type QuestDay = {
   cards: Card[];
   rank: number;
   sick: boolean;
+  // The calibration week, while it runs.
+  calibration: CalibrationWeek | null;
 };
 
 // An active Shield covers the first missed day since it was raised, then
@@ -236,8 +239,9 @@ async function settleMissedQuests(
 // Gets the quest list ready: closes overdue quests, lets an active Shield
 // cover a missed day, applies failed main quest penalties, adjusts difficulty
 // once a week, takes the Sunday rest day if none was taken, and issues
-// whatever the System still owes today, including the next Skill questline
-// steps. Returns null before onboarding is finished.
+// whatever the System still owes today, including placement quests in the
+// calibration week and the next Skill questline steps. Returns null before
+// onboarding is finished.
 export async function prepareQuestDay(supabase: Client): Promise<QuestDay | null> {
   const userId = await currentUserId(supabase);
   if (!userId) return null;
@@ -293,6 +297,21 @@ export async function prepareQuestDay(supabase: Client): Promise<QuestDay | null
   const points = Object.fromEntries(
     EARNED_STATS.map((stat) => [stat, applyDecay({ ...earned[stat], today, sickSince })]),
   ) as Record<EarnedStat, number>;
+  // Calibration week: placement quests whose day has come.
+  const calibration = await preparePlacements(supabase, {
+    today,
+    mainClass: profile.main_class,
+    goal: profile.goal ?? "",
+    dailyMinutes: profile.daily_minutes as DailyMinutes,
+    points,
+    issuedSlots: (startedOn) =>
+      new Set(
+        quests
+          .filter((q) => q.type === "placement" && q.issuedOn >= startedOn && q.slot !== null)
+          .map((q) => q.slot as number),
+      ),
+  });
+
   // A rerolled quest's replacement takes its place.
   const existing: ExistingQuest[] = quests.filter((q) => q.status !== "rerolled").map((q) => ({
     type: q.type,
@@ -314,11 +333,14 @@ export async function prepareQuestDay(supabase: Client): Promise<QuestDay | null
     },
     existing,
     restDay: isRestDay(restDays, today),
+    placementStat: calibration?.placementStat ?? null,
   });
 
   let current = quests;
   if (drafts.length > 0) {
     await supabase.rpc("issue_quests", { p_quests: drafts.map(toRow) });
+  }
+  if (drafts.length > 0 || calibration) {
     current = await loadRecentQuests(supabase, today);
   }
 
@@ -338,5 +360,6 @@ export async function prepareQuestDay(supabase: Client): Promise<QuestDay | null
     cards,
     rank,
     sick: Boolean(sickSince),
+    calibration,
   };
 }

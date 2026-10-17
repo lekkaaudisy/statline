@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppShell } from "../app-shell";
 import { DevPassDay } from "../dev/dev-panel";
+import { calibrationDay } from "@/lib/game/calibration";
 import {
+  CALIBRATION_DAYS,
   REST_DAY_POINTS,
   USER_SIDE_QUESTS_PER_DAY,
 } from "@/lib/game/constants";
@@ -35,7 +37,7 @@ async function Quests() {
   const supabase = await createClient();
   const day = await prepareQuestDay(supabase);
   if (!day) redirect("/onboarding");
-  const { today, restDays, weeklyRestDays, cards, rank, sick } = day;
+  const { today, restDays, weeklyRestDays, cards, rank, sick, calibration } = day;
   // A rerolled quest is replaced by its swap, so it is not shown.
   const quests = day.quests.filter((q) => q.status !== "rerolled");
 
@@ -49,6 +51,11 @@ async function Quests() {
       ((q.source === "system" && q.issuedOn === today) ||
         (q.source === "user" && ((q.status === "open" && q.dueOn >= today) || clearedToday(q)))),
   );
+  const placements = calibration
+    ? quests
+        .filter((q) => q.type === "placement" && q.issuedOn >= calibration.calibration.startedOn)
+        .sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0))
+    : [];
   const skills = quests.filter(
     (q) => q.type === "skill" && ((q.status === "open" && q.dueOn >= today) || clearedToday(q)),
   );
@@ -113,6 +120,24 @@ async function Quests() {
             )
           ))}
       </section>
+
+      {calibration && (
+        <section className="flex flex-col gap-3">
+          <SectionTitle
+            aside={`Day ${calibrationDay(calibration.calibration.startedOn, today)} of ${CALIBRATION_DAYS}`}
+          >
+            PLACEMENT QUESTS
+          </SectionTitle>
+          <p className="text-[13px] leading-normal text-muted">
+            Your calibration week. Each placement quest tests one grade and stays open
+            until day {CALIBRATION_DAYS}. Photo or summary proof counts most. Skipping
+            carries no penalty.
+          </p>
+          {placements.map((q) => (
+            <QuestCard key={q.id} quest={q} />
+          ))}
+        </section>
+      )}
 
       {main && (
         <section className="flex flex-col gap-3">

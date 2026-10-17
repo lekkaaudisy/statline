@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { AppShell } from "./app-shell";
 import { DevPanel } from "./dev/dev-panel";
-import { logOut } from "./login/actions";
 import { StatusWindow, type StatView } from "./status-window";
 import { CLASS_INFO, isClassId } from "@/lib/game/classes";
 import { DECAY_START_DAYS } from "@/lib/game/constants";
@@ -124,32 +124,10 @@ async function Status() {
 
 export default function Home() {
   return (
-    <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <header className="flex items-end justify-between border-b border-track px-4 pt-5 pb-3.5">
-        <div className="flex flex-col gap-1">
-          <span className="font-display text-xs tracking-[0.25em] text-accent">
-            THE SYSTEM
-          </span>
-          <span className="font-display text-2xl font-bold tracking-wide">
-            STATLINE
-          </span>
-        </div>
-        <form action={logOut}>
-          <button
-            type="submit"
-            className="min-h-11 rounded-md border border-line px-3 font-display text-sm font-medium uppercase tracking-wider text-accent"
-          >
-            Log out
-          </button>
-        </form>
-      </header>
-      <main className="flex-1 px-4 py-5">
-        <Suspense
-          fallback={<p className="text-base text-muted">Loading status</p>}
-        >
-          <Status />
-        </Suspense>
-      </main>
-    </div>
+    <AppShell active="status">
+      <Suspense fallback={<p className="text-base text-muted">Loading status</p>}>
+        <Status />
+      </Suspense>
+    </AppShell>
   );
 }

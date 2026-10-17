@@ -6,6 +6,7 @@ import { EARNED_STATS, STAT_INFO } from "@/lib/game/stats";
 import {
   devAddPoints,
   devMakeInactive,
+  devPassDay,
   devToggleProvisional,
   devToggleSick,
   type DevResult,
@@ -89,12 +90,55 @@ export function DevPanel({
           type="button"
           disabled={pending}
           className={buttonClass}
+          onClick={() => run(devPassDay)}
+        >
+          Pass one day (new quests)
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          className={buttonClass}
           onClick={() => run(devToggleProvisional)}
         >
           {provisional ? "Mark calibrated" : "Make provisional again"}
         </button>
       </div>
 
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-gold">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+// Just the "pass one day" control, for the quest list.
+export function DevPassDay() {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <section
+      aria-label="Developer tools"
+      className="rounded-[14px] border border-dashed border-gold/60 p-4"
+    >
+      <p className="font-display text-sm tracking-[0.15em] text-gold">
+        DEVELOPER TOOLS
+      </p>
+      <button
+        type="button"
+        disabled={pending}
+        className={`${buttonClass} mt-3 w-full`}
+        onClick={() =>
+          startTransition(async () => {
+            const result = await devPassDay();
+            setError(result.error ?? null);
+          })
+        }
+      >
+        Pass one day (new quests)
+      </button>
       {error && (
         <p role="alert" className="mt-3 text-sm text-gold">
           {error}

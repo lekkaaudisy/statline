@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* Statline colours (from CLAUDE.md "Look and feel").
+   Use them in Tailwind classes, e.g. bg-panel, text-accent, border-tier-gold. */
+@theme {
+  --color-background: #0a0e15;
+  --color-panel: #111826;
+  --color-foreground: #e6edf5;
+  --color-muted: #8b98ab;
+  --color-accent: #5ed1f0;
+  --color-gold: #e8b94a;
+
+  --color-tier-bronze: #c98b5a;
+  --color-tier-silver: #bfc8d2;
+  --color-tier-gold: #e8b94a;
+  --color-tier-platinum: #74d9cf;
+
+  --font-display: var(--font-chakra-petch), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}

@@ -1,31 +1,36 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { logOut } from "./login/actions";
+import { StatusWindow, type StatRow } from "./status-window";
+import { CLASS_INFO, isClassId } from "@/lib/game/classes";
 import { createClient } from "@/lib/supabase/server";
 
 async function Status() {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const userId = auth?.claims.sub;
-
-  // Deliberately unfiltered: Row Level Security alone limits what comes back,
-  // so this count proves a user can only see their own profile.
-  const { data: profiles, count } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name", { count: "exact" });
-  const me = profiles?.find((profile) => profile.id === userId);
+    .select("display_name, main_class, second_class, onboarded_at")
+    .maybeSingle();
+
+  // New players go through onboarding first.
+  if (!profile?.onboarded_at) redirect("/onboarding");
+
+  const { data: stats } = await supabase
+    .from("stats")
+    .select("stat, points, provisional");
+
+  const classNames = [profile.main_class, profile.second_class]
+    .filter(isClassId)
+    .map((id) => CLASS_INFO[id].name)
+    .join(" + ");
 
   return (
     <>
       <h1 className="mt-2 font-display text-3xl font-bold tracking-wide text-foreground">
-        Welcome, {me?.display_name ?? "Player"}
+        {profile.display_name}
       </h1>
-      <p className="mt-4 text-base text-muted">
-        The system is being prepared. Quests will appear here soon.
-      </p>
-      <p className="mt-6 rounded-md border border-accent/30 p-3 text-sm text-muted">
-        Privacy check: profiles visible to you:{" "}
-        <span className="font-display font-bold text-accent">{count ?? 0}</span>
-      </p>
+      <p className="mt-1 text-sm text-muted">Class: {classNames}</p>
+      <StatusWindow rows={(stats ?? []) as StatRow[]} />
     </>
   );
 }
@@ -35,7 +40,7 @@ export default function Home() {
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <section className="w-full max-w-sm rounded-lg border border-accent/40 bg-panel p-6 shadow-[0_0_24px_rgba(94,209,240,0.12)]">
         <p className="font-display text-xs font-medium uppercase tracking-[0.3em] text-accent">
-          System
+          Status
         </p>
         <Suspense
           fallback={<p className="mt-2 text-base text-muted">Loading status</p>}

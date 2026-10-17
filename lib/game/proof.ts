@@ -95,3 +95,11 @@ export function isOwnPhotoPath(path: string, userId: string): boolean {
 export function proofPhotoPath(userId: string, questId: string, time: number): string {
   return `${userId}/${questId}-${time}.jpg`;
 }
+
+// Extra points a crewmate's confirmation adds to a quest already cleared
+// with evidence or honour: Crew proof's share minus the original share,
+// doubled if Double XP doubled the original award.
+export function crewTopUp(gain: number, original: ProofType, doubled: boolean): number {
+  const extra = Math.max(proofPoints(gain, "crew") - proofPoints(gain, original), 0);
+  return doubled ? extra * 2 : extra;
+}

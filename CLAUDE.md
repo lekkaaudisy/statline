@@ -120,6 +120,15 @@ Honour proof is never allowed for difficulty rank 5 or higher.
 
 The only growth stage in the MVP is **Awakening**: at least 7 inactive days, then 14 days of steady quests. It gives a stat boost and one Exclusive card. "Steady" means at least 12 active days (a quest cleared or a rest day) in a 14-day window. Sick days count as inactive. Awakening happens once per account in the MVP. Ascension, the wall, the realms and Your Own Path come later.
 
+### Crew-lite (MVP)
+
+- One crew per user, up to 30 members, joined with a 6-character invite code. The owner can replace the code. When the owner leaves, the member who joined first takes over; an empty crew is deleted.
+- Crewmates see only display name, Class and letter grades. Provisional grades are hidden. Crewmates never get direct table access to each other's stats, profiles, quests or proofs: only the crew read functions in the migration.
+- **Crew proof is a top-up:** a quest is cleared with evidence or honour as usual, then the user can ask the crew. Within 3 days of clearing, another crewmate can confirm it, which turns it into Crew proof (100%) and adds the difference. Photos are never shown to the crew.
+- **Gifting:** only held System cards (Reroll, Rest, Double XP, Shield) can be gifted, to a crewmate, once. A gift to a full hand waits as pending.
+- **Weekly leaderboard:** contribution only (quests cleared, crewmates' quests confirmed, cards gifted), with weekly caps on confirmations and gifts. Never raw stats or grades.
+- Database rules are tested in `supabase/tests/` with PGlite (a Postgres that runs inside Vitest).
+
 ## Safety rules (always)
 
 - Never create quests with calorie targets, weight-loss goals, fasting or body-size goals. Fitness quests are about activity and skill only.

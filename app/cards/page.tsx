@@ -3,12 +3,14 @@ import { Suspense } from "react";
 import { AppShell } from "../app-shell";
 import { cardUseError, questlineProgress, rerollTargets, restTargets } from "@/lib/game/card-effects";
 import { isProofCard } from "@/lib/game/cards";
+import { giftError } from "@/lib/game/crew";
 import { HAND_SIZE } from "@/lib/game/constants";
 import { handCards } from "@/lib/game/hand";
 import { isRestDay } from "@/lib/game/rest-day";
 import { getQuestline } from "@/lib/game/skill-questlines";
 import { devToolsFlagOn } from "@/lib/dev-tools";
-import { prepareQuestDay } from "@/lib/supabase/quests";
+import { loadCrewMembers } from "@/lib/supabase/crew";
+import { currentUserId, prepareQuestDay } from "@/lib/supabase/quests";
 import { createClient } from "@/lib/supabase/server";
 import { cardView } from "./card-view";
 import { HandView, type InPlay } from "./hand-view";
@@ -23,9 +25,19 @@ async function Hand() {
   const restToday = isRestDay(restDays, today);
   const context = { today, quests, cards, restToday };
 
+  // Crewmates to gift to, and the held cards that were gifts (never passed on).
+  const [userId, members, { data: giftRows }] = await Promise.all([
+    currentUserId(supabase),
+    loadCrewMembers(supabase),
+    supabase.from("cards").select("id, gifted_by").eq("status", "held").not("gifted_by", "is", null),
+  ]);
+  const crewmates = members.filter((m) => m.userId !== userId).map((m) => ({ id: m.userId, name: m.name }));
+  const giftedBy = new Map(((giftRows ?? []) as { id: string; gifted_by: string }[]).map((r) => [r.id, r.gifted_by]));
+
   const hand = handCards(cards).map((c) => ({
     ...cardView(c),
     blocked: cardUseError(c, context),
+    giftable: giftError({ kind: c.kind, status: c.status, giftedBy: giftedBy.get(c.id) ?? null }) === null,
   }));
   const pending = cards.filter((c) => c.status === "pending").map(cardView);
   const proof = cards.filter((c) => isProofCard(c) && c.status === "held").map(cardView);
@@ -63,6 +75,7 @@ async function Hand() {
       inPlay={inPlay}
       rerollQuests={rerollTargets(quests, today).map((q) => ({ id: q.id, title: q.title, type: q.type }))}
       restCount={restTargets(quests, today).length}
+      crewmates={crewmates}
       devTester={Boolean(devTester)}
     />
   );

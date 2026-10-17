@@ -177,3 +177,17 @@ export async function devGiveCards(): Promise<CardActionResult> {
   refresh();
   return { message: "Test cards added." };
 }
+
+// Gifts a held System card to a crewmate. A full hand gets it as pending.
+export async function giftCard(input: unknown): Promise<CardActionResult> {
+  if (typeof input !== "object" || input === null) return { error: SAVE_FAILED };
+  const { cardId, toUserId } = input as Record<string, unknown>;
+  if (typeof cardId !== "string" || typeof toUserId !== "string") {
+    return { error: "Choose a crewmate." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("gift_card", { p_card_id: cardId, p_to: toUserId });
+  if (error) return { error: friendly(error) };
+  refresh();
+  return { message: "Card gifted." };
+}

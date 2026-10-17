@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { AppShell } from "../../app-shell";
 import { withDoubleXp } from "@/lib/game/card-effects";
+import { confirmationTopUp, confirmWindowOpen } from "@/lib/game/crew";
 import { toIsoDate } from "@/lib/game/dates";
 import { PROOF_INFO, proofPoints, type ProofType } from "@/lib/game/proof";
 import { STAT_INFO } from "@/lib/game/stats";
-import { currentUserId, QUEST_COLUMNS, toQuest } from "@/lib/supabase/quests";
+import { loadCrew } from "@/lib/supabase/crew";
+import { completedOn, currentUserId, QUEST_COLUMNS, toQuest } from "@/lib/supabase/quests";
 import { createClient } from "@/lib/supabase/server";
 import { PROOF_BUCKET } from "@/lib/supabase/storage";
 import { QuestHeader } from "../quest-view";
+import { AskCrewButton } from "./ask-crew-button";
 import { ProofForm } from "./proof-form";
 
 // How long a link to a proof photo works, in seconds.
@@ -35,6 +38,8 @@ type ProofRow = {
   summary: string | null;
   photo_path: string | null;
   points_awarded: number;
+  crew_requested_at: string | null;
+  confirmed_at: string | null;
 };
 
 async function QuestDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -51,10 +56,23 @@ async function QuestDetail({ params }: { params: Promise<{ id: string }> }) {
   if (quest.status === "cleared") {
     const { data } = await supabase
       .from("quest_proofs")
-      .select("proof_type, summary, photo_path, points_awarded")
+      .select("proof_type, summary, photo_path, points_awarded, crew_requested_at, confirmed_at")
       .eq("quest_id", quest.id)
       .maybeSingle();
     const proof = data as ProofRow | null;
+    const crew = proof ? await loadCrew(supabase) : null;
+    const clearedOn = completedOn(quest);
+    const topUp = proof
+      ? confirmationTopUp({ gain: quest.gain, proofType: proof.proof_type, pointsAwarded: proof.points_awarded })
+      : 0;
+    let crewNote: ReactNode = null;
+    if (proof?.confirmed_at) {
+      crewNote = <p className="text-sm text-accent">Confirmed by your crew.</p>;
+    } else if (proof?.crew_requested_at) {
+      crewNote = <p className="text-sm text-muted">Waiting for a crewmate to confirm (+{topUp}).</p>;
+    } else if (crew && topUp > 0 && clearedOn && confirmWindowOpen(clearedOn, today)) {
+      crewNote = <AskCrewButton questId={quest.id} topUp={topUp} />;
+    }
     const photo = proof?.photo_path
       ? (await supabase.storage.from(PROOF_BUCKET).createSignedUrl(proof.photo_path, PHOTO_LINK_SECONDS)).data?.signedUrl
       : null;
@@ -72,6 +90,7 @@ async function QuestDetail({ params }: { params: Promise<{ id: string }> }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={photo} alt="Your proof photo" className="max-h-80 w-full rounded-lg object-contain" />
         )}
+        {crewNote}
       </section>
     );
   } else if (quest.status === "open" && quest.dueOn >= today) {

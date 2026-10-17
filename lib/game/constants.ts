@@ -282,3 +282,33 @@ export const EXCLUSIVE_TIER: CardTier = "Platinum";
 // days (each day marked active before it passes).
 export const DEV_IDLE_DAYS = 7;
 export const DEV_STEADY_DAYS = 14;
+
+// ---------------------------------------------------------------------------
+// Crew-lite (Slice 7)
+
+// Members per crew, and crew name length in characters.
+export const CREW_MAX_MEMBERS = 30;
+export const CREW_NAME_MIN_LENGTH = 3;
+export const CREW_NAME_MAX_LENGTH = 30;
+
+// Invite codes: this many characters from this alphabet (no 0, O, 1 or I,
+// so codes are easy to read out).
+export const INVITE_CODE_LENGTH = 6;
+export const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+// A crewmate can confirm a cleared quest for this many days after it was
+// cleared.
+export const CREW_CONFIRM_WINDOW_DAYS = 3;
+
+// Weekly leaderboard: contribution points for each action. Raw stats and
+// grades never count.
+export const CONTRIBUTION_POINTS = {
+  questCleared: 1,
+  proofConfirmed: 2,
+  cardGifted: 2,
+} as const;
+
+// Confirmations and gifts above these numbers in a week still happen but
+// add no more contribution, so two friends cannot farm points off each other.
+export const WEEKLY_CONFIRMATIONS_COUNTED = 10;
+export const WEEKLY_GIFTS_COUNTED = 3;

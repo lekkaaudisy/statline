@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import type { CardTier } from "@/lib/game/tiers";
-import { devGiveCards, discardCard, playCard, type CardActionResult } from "./actions";
+import { devGiveCards, discardCard, giftCard, playCard, type CardActionResult } from "./actions";
 import { CardTile, TIER_STYLE } from "./card-tile";
 import type { CardView } from "./card-view";
+import { GiftCard, type Crewmate } from "./gift-card";
 import { PendingChoice } from "./pending-choice";
 
 export type InPlay = { id: string; tier: CardTier; title: string; detail: string };
-type HandCard = CardView & { blocked: string | null };
+type HandCard = CardView & { blocked: string | null; giftable: boolean };
 type QuestOption = { id: string; title: string; type: string };
 
 const buttonClass =
@@ -34,6 +35,7 @@ export function HandView({
   inPlay,
   rerollQuests,
   restCount,
+  crewmates,
   devTester,
 }: {
   hand: HandCard[];
@@ -43,13 +45,14 @@ export function HandView({
   inPlay: InPlay[];
   rerollQuests: QuestOption[];
   restCount: number;
+  crewmates: Crewmate[];
   devTester: boolean;
 }) {
   const [busy, startTransition] = useTransition();
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // A card waiting for a second tap: Reroll (pick a quest), Rest, or discard.
-  const [confirming, setConfirming] = useState<{ id: string; mode: "use" | "discard" } | null>(null);
+  const [confirming, setConfirming] = useState<{ id: string; mode: "use" | "discard" | "gift" } | null>(null);
   const [rerollQuest, setRerollQuest] = useState<string | null>(null);
 
   function run(action: () => Promise<CardActionResult>) {
@@ -145,7 +148,15 @@ export function HandView({
                   <p className="text-xs text-muted">Discard this card for good?</p>
                 )}
 
-                {open ? (
+                {open && confirming.mode === "gift" ? (
+                  <GiftCard
+                    cardId={card.id}
+                    crewmates={crewmates}
+                    busy={busy}
+                    onCancel={() => setConfirming(null)}
+                    onGift={(toUserId) => run(() => giftCard({ cardId: card.id, toUserId }))}
+                  />
+                ) : open ? (
                   <div className="grid grid-cols-2 gap-2">
                     <button type="button" className={buttonClass} onClick={() => setConfirming(null)}>
                       Cancel
@@ -176,6 +187,16 @@ export function HandView({
                     >
                       {card.action}
                     </button>
+                    {card.giftable && crewmates.length > 0 && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className={buttonClass}
+                        onClick={() => setConfirming({ id: card.id, mode: "gift" })}
+                      >
+                        Gift to crewmate
+                      </button>
+                    )}
                     <button
                       type="button"
                       disabled={busy}

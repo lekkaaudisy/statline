@@ -6,6 +6,7 @@ const TABS = [
   { id: "status", label: "STATUS", href: "/" },
   { id: "quests", label: "QUESTS", href: "/quests" },
   { id: "cards", label: "CARDS", href: "/cards" },
+  { id: "crew", label: "CREW", href: "/crew" },
 ] as const;
 
 export type Tab = (typeof TABS)[number]["id"];
@@ -36,7 +37,7 @@ export function AppShell({ active, children }: { active: Tab; children: ReactNod
       <main className="flex-1 px-4 py-5">{children}</main>
       <nav
         aria-label="Main"
-        className="sticky bottom-0 grid grid-cols-3 border-t border-track bg-[#0d121b] pb-[env(safe-area-inset-bottom)]"
+        className="sticky bottom-0 grid grid-cols-4 border-t border-track bg-[#0d121b] pb-[env(safe-area-inset-bottom)]"
       >
         {TABS.map((tab) => {
           const current = tab.id === active;

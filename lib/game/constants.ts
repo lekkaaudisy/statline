@@ -46,3 +46,43 @@ export const DAILY_MINUTES_OPTIONS = [15, 30, 60] as const;
 
 // Longest goal a user can write, in characters.
 export const GOAL_MAX_LENGTH = 120;
+
+// The first grade of the Rare range. The MVP never awards SR, but at SSS the
+// status window shows progress toward it.
+export const RARE_RANGE_START_POINTS = 420;
+
+// Decay: a stat inactive for this many days starts losing points, this many
+// per day, but never falls below the best-ever grade minus these steps.
+export const DECAY_START_DAYS = 7;
+export const DECAY_POINTS_PER_DAY = 1;
+export const DECAY_FLOOR_STEPS = 2;
+
+// Potential is recalculated weekly from the combined weekly points gain of
+// the four earned stats, averaged over this many weeks.
+export const POTENTIAL_WINDOW_WEEKS = 4;
+
+// Potential moves at most this many grade steps per recalculation.
+export const POTENTIAL_MAX_STEPS_PER_WEEK = 1;
+
+// Combined weekly gain -> Potential grade. A gain gets the first grade in
+// this list whose minimum it reaches. First guesses: retune once quests give
+// real points (Slice 4).
+export const POTENTIAL_BANDS: readonly {
+  minWeeklyGain: number;
+  grade: Grade;
+}[] = [
+  { minWeeklyGain: 100, grade: "SSS" },
+  { minWeeklyGain: 75, grade: "SS" },
+  { minWeeklyGain: 50, grade: "S" },
+  { minWeeklyGain: 30, grade: "A" },
+  { minWeeklyGain: 15, grade: "B" },
+  { minWeeklyGain: 5, grade: "C" },
+  { minWeeklyGain: 0, grade: "D" },
+  { minWeeklyGain: -10, grade: "E" },
+  { minWeeklyGain: -Infinity, grade: "F" },
+];
+
+// Developer-only test controls (never shown to normal accounts): the point
+// buttons, and how far back "Make inactive" moves the last active day.
+export const DEV_POINT_STEPS = [5, 20, -20] as const;
+export const DEV_INACTIVE_DAYS = 10;

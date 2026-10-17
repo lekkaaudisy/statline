@@ -12,7 +12,9 @@ const DONE_LABEL: Partial<Record<Quest["status"], string>> = {
 };
 
 export function QuestCard({ quest, note }: { quest: Quest; note?: string }) {
-  const done = DONE_LABEL[quest.status];
+  // Skipping a placement quest carries no penalty, so it is not "missed".
+  const done =
+    quest.type === "placement" && quest.status === "missed" ? "SKIPPED" : DONE_LABEL[quest.status];
   return (
     <article className="flex flex-col gap-2.5 rounded-xl border border-[#243349] bg-panel p-4">
       <QuestHeader quest={quest} />

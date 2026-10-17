@@ -80,6 +80,8 @@ Fighter, Scholar, Builder, Professional, Monk, Leader. Each user picks one main 
 4. Each grade then settles on proof, up or down. The screen says "Calibrated", never "Declined". The user earns a "Day One" Proof card.
 5. Skipped placement quests carry no penalty.
 
+**Settlement (day 8):** each stat's proof score is the average proof weight of its quests in days 1 to 7 (a missed daily, side or main quest scores 0; skipped placement quests are not counted). With fewer than 2 counted quests the grade is kept. A score of 0.70 or more moves it up one step (it may pass the B cap); below 0.35 moves it down one step. A grade moves at most one step. A season is 12 weeks, and recalibration is allowed once per season.
+
 ### Quests
 
 | Type | Notes |
@@ -116,7 +118,7 @@ Honour proof is never allowed for difficulty rank 5 or higher.
 
 ### Growth (MVP)
 
-The only growth stage in the MVP is **Awakening**: at least 7 inactive days, then 14 days of steady quests. It gives a stat boost and one Exclusive card. Ascension, the wall, the realms and Your Own Path come later.
+The only growth stage in the MVP is **Awakening**: at least 7 inactive days, then 14 days of steady quests. It gives a stat boost and one Exclusive card. "Steady" means at least 12 active days (a quest cleared or a rest day) in a 14-day window. Sick days count as inactive. Awakening happens once per account in the MVP. Ascension, the wall, the realms and Your Own Path come later.
 
 ## Safety rules (always)
 

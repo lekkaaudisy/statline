@@ -11,6 +11,7 @@ const TYPE_STYLE: Record<Quest["type"], string> = {
   main: "border-gold text-gold",
   side: "border-muted text-muted",
   skill: "border-tier-platinum text-tier-platinum",
+  placement: "border-tier-silver text-tier-silver",
 };
 
 export const TIER_TEXT: Record<CardTier, string> = {

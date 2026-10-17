@@ -52,3 +52,16 @@ export async function loadTreats(supabase: Client): Promise<Treats> {
   const rows = (data ?? []) as { tier: CardTier; treat: string }[];
   return Object.fromEntries(rows.map((r) => [r.tier, r.treat]));
 }
+
+// The user's Day One or Exclusive Proof card, if they have it.
+export async function loadProofCard(
+  supabase: Client,
+  kind: "day_one" | "exclusive",
+): Promise<Card | null> {
+  const { data } = await supabase
+    .from("cards")
+    .select(CARD_COLUMNS)
+    .eq("kind", kind)
+    .maybeSingle();
+  return data ? toCard(data as CardRow) : null;
+}

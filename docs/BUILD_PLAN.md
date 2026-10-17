@@ -17,7 +17,7 @@ Seven slices, each small enough to build and test in one Claude Code session. Bu
 - [x] Slice 2: Onboarding
 - [x] Slice 3: Grade engine and status window
 - [x] Slice 4: Quests
-- [ ] Slice 5: Cards
+- [x] Slice 5: Cards
 - [ ] Slice 6: Calibration week
 - [ ] Slice 7: Crew-lite
 

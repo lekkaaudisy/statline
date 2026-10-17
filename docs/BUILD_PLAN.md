@@ -15,7 +15,7 @@ Seven slices, each small enough to build and test in one Claude Code session. Bu
 - [x] Slice 0: Setup
 - [x] Slice 1: Login and profile
 - [x] Slice 2: Onboarding
-- [ ] Slice 3: Grade engine and status window
+- [X] Slice 3: Grade engine and status window
 - [ ] Slice 4: Quests
 - [ ] Slice 5: Cards
 - [ ] Slice 6: Calibration week

@@ -111,7 +111,7 @@ Honour proof is never allowed for difficulty rank 5 or higher.
   - **Reward:** a treat the user sets in advance
   - **Skill:** opens a questline
   - **Proof:** Day One, Exclusive; never tradable
-- **The hand holds at most 10 cards.**
+- **The hand holds at most 10 cards.** Proof cards sit apart and never count toward the 10.
 - **No card, stat or grade can ever be bought with money.** Paid features are cosmetic only.
 
 ### Growth (MVP)

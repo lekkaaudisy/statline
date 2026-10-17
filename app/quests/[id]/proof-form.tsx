@@ -9,9 +9,9 @@ import {
   SUMMARY_MIN_LENGTH,
 } from "@/lib/game/constants";
 import { proofPhotoPath, type SelectableProof } from "@/lib/game/proof";
-import { STAT_INFO } from "@/lib/game/stats";
 import { createClient } from "@/lib/supabase/client";
 import { PROOF_BUCKET } from "@/lib/supabase/storage";
+import { CardReveal } from "../../cards/card-reveal";
 import { completeQuest, type CompleteResult } from "../actions";
 
 type Option = { proof: SelectableProof; points: number; allowed: boolean };
@@ -43,12 +43,14 @@ export function ProofForm({
   rank,
   statName,
   options,
+  doubleXp,
 }: {
   questId: string;
   userId: string;
   rank: number;
   statName: string;
   options: Option[];
+  doubleXp: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -102,43 +104,23 @@ export function ProofForm({
   }
 
   if (cleared) {
-    const name = STAT_INFO[cleared.stat].name;
     return (
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cleared-title"
-        className="fixed inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-[rgba(5,8,13,0.94)] p-8"
-      >
-        <p id="cleared-title" className="font-display text-sm tracking-[0.3em] text-accent">
-          QUEST CLEARED
-        </p>
-        <p className="font-display text-2xl font-bold">
-          +{cleared.awarded} {name}
-        </p>
-        {cleared.before !== cleared.after && (
-          <p className="text-[15px] font-semibold text-gold">
-            {name} rank up: {cleared.before} to {cleared.after}
-          </p>
-        )}
-        <button
-          type="button"
-          autoFocus
-          onClick={() => {
-            router.push("/quests");
-            router.refresh();
-          }}
-          className="min-h-12 rounded-[10px] border border-accent bg-[#0f2230] px-7 font-display text-[15px] font-semibold tracking-wider text-foreground"
-        >
-          BACK TO QUESTS
-        </button>
-      </div>
+      <CardReveal
+        {...cleared}
+        onClose={() => {
+          router.push("/quests");
+          router.refresh();
+        }}
+      />
     );
   }
 
   return (
     <section className="flex flex-col gap-4">
       <h2 className="font-display text-sm tracking-[0.15em] text-accent">CHOOSE YOUR PROOF</h2>
+      {doubleXp && (
+        <p className="text-sm font-semibold text-gold">Double XP active: this quest counts twice.</p>
+      )}
       <fieldset className="flex flex-col gap-2">
         <legend className="sr-only">Proof type</legend>
         {CHOICES.map((c) => {

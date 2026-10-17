@@ -5,12 +5,13 @@ import { logOut } from "./login/actions";
 const TABS = [
   { id: "status", label: "STATUS", href: "/" },
   { id: "quests", label: "QUESTS", href: "/quests" },
+  { id: "cards", label: "CARDS", href: "/cards" },
 ] as const;
 
 export type Tab = (typeof TABS)[number]["id"];
 
 // The frame around every main screen: the System header, the page, and the
-// bottom tab bar from the prototype. CARDS joins the tabs in Slice 5.
+// bottom tab bar from the prototype.
 export function AppShell({ active, children }: { active: Tab; children: ReactNode }) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
@@ -35,7 +36,7 @@ export function AppShell({ active, children }: { active: Tab; children: ReactNod
       <main className="flex-1 px-4 py-5">{children}</main>
       <nav
         aria-label="Main"
-        className="sticky bottom-0 grid grid-cols-2 border-t border-track bg-[#0d121b] pb-[env(safe-area-inset-bottom)]"
+        className="sticky bottom-0 grid grid-cols-3 border-t border-track bg-[#0d121b] pb-[env(safe-area-inset-bottom)]"
       >
         {TABS.map((tab) => {
           const current = tab.id === active;

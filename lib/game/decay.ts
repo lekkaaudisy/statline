@@ -34,6 +34,13 @@ export function countedInactiveDays(
   return Math.max(0, daysBetween(lastActiveOn, end));
 }
 
+// The lowest points decay can reach: the bottom of the best-ever grade (or
+// the current grade, if higher) minus two steps.
+export function decayFloor(points: number, bestGrade: Grade | null): number {
+  const best = maxGrade(bestGrade ?? "F", pointsToGrade(points));
+  return gradeToPoints(stepDown(best, DECAY_FLOOR_STEPS));
+}
+
 // The points after decay. Worked out fresh from the saved points each time,
 // so it can be shown on every page load without ever counting twice.
 export function applyDecay(input: DecayInput): number {
@@ -45,8 +52,7 @@ export function applyDecay(input: DecayInput): number {
   if (days < DECAY_START_DAYS) return points;
   const lost = (days - DECAY_START_DAYS + 1) * DECAY_POINTS_PER_DAY;
 
-  const best = maxGrade(bestGrade ?? "F", pointsToGrade(points));
-  const floor = gradeToPoints(stepDown(best, DECAY_FLOOR_STEPS));
+  const floor = decayFloor(points, bestGrade);
   if (points <= floor) return points;
   return Math.max(floor, points - lost);
 }

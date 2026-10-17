@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppShell } from "../../app-shell";
+import { withDoubleXp } from "@/lib/game/card-effects";
 import { toIsoDate } from "@/lib/game/dates";
 import { PROOF_INFO, proofPoints, type ProofType } from "@/lib/game/proof";
 import { STAT_INFO } from "@/lib/game/stats";
@@ -15,10 +16,18 @@ import { ProofForm } from "./proof-form";
 const PHOTO_LINK_SECONDS = 600;
 
 const CLOSED_TEXT = {
-  missed: "This quest was missed. No penalty yet: the System gives new quests every day.",
-  rested: "Rested: this daily fell on your rest day, with no penalty.",
+  missed: "This quest was missed. The System gives new quests every day.",
+  rested: "Rested: this daily fell on a rest day, with no penalty.",
   excused: "Excused: missed while sick or injured, so it does not count.",
+  shielded: "Shielded: a Shield card covered this day, so it carries no penalty.",
+  rerolled: "Rerolled: a Reroll card swapped this quest for another.",
   expired: "This quest has ended.",
+};
+
+const PENALTY_TEXT = {
+  card: "Main quest failed: it cost one held card.",
+  dent: "Main quest failed: it cost a small stat dent.",
+  none: null,
 };
 
 type ProofRow = {
@@ -66,9 +75,16 @@ async function QuestDetail({ params }: { params: Promise<{ id: string }> }) {
       </section>
     );
   } else if (quest.status === "open" && quest.dueOn >= today) {
+    const { data: doubleCard } = await supabase
+      .from("cards")
+      .select("id")
+      .eq("kind", "double_xp")
+      .eq("status", "active")
+      .maybeSingle();
+    const doubleXp = Boolean(doubleCard);
     const options = (["evidence", "honour"] as const).map((p) => ({
       proof: p,
-      points: proofPoints(quest.gain, p),
+      points: withDoubleXp(proofPoints(quest.gain, p), doubleXp),
       allowed: quest.allowedProofs.includes(p),
     }));
     body = (
@@ -78,11 +94,18 @@ async function QuestDetail({ params }: { params: Promise<{ id: string }> }) {
         rank={quest.rank}
         statName={statName}
         options={options}
+        doubleXp={doubleXp}
       />
     );
   } else {
     const key = quest.status === "open" ? "expired" : quest.status;
-    body = <p className="rounded-xl border border-line p-4 text-sm text-muted">{CLOSED_TEXT[key]}</p>;
+    const penalty = quest.penalty ? PENALTY_TEXT[quest.penalty] : null;
+    body = (
+      <p className="rounded-xl border border-line p-4 text-sm text-muted">
+        {CLOSED_TEXT[key]}
+        {penalty && <span className="mt-2 block text-gold">{penalty}</span>}
+      </p>
+    );
   }
 
   return (

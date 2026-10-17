@@ -7,6 +7,8 @@ const DONE_LABEL: Partial<Record<Quest["status"], string>> = {
   rested: "RESTED",
   missed: "MISSED",
   excused: "EXCUSED",
+  shielded: "SHIELDED",
+  rerolled: "REROLLED",
 };
 
 export function QuestCard({ quest, note }: { quest: Quest; note?: string }) {

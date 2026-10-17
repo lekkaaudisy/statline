@@ -13,7 +13,7 @@ Seven slices, each small enough to build and test in one Claude Code session. Bu
 **Progress:**
 
 - [x] Slice 0: Setup
-- [ ] Slice 1: Login and profile
+- [x] Slice 1: Login and profile
 - [ ] Slice 2: Onboarding
 - [ ] Slice 3: Grade engine and status window
 - [ ] Slice 4: Quests

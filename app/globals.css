@@ -16,6 +16,8 @@
   --color-tier-silver: #bfc8d2;
   --color-tier-gold: #e8b94a;
   --color-tier-platinum: #74d9cf;
+  /* Not set in CLAUDE.md yet: a pale blue placeholder for rank 5 quests. */
+  --color-tier-diamond: #a9c7ff;
 
   --font-display: var(--font-chakra-petch), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;

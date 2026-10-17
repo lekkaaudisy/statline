@@ -133,3 +133,14 @@ export async function devToggleProvisional(): Promise<DevResult> {
     };
   });
 }
+
+// Pretends a day has passed: moves quest, rest day and activity dates back
+// one day, so the next visit is a new quest day.
+export async function devPassDay(): Promise<DevResult> {
+  if (!devToolsFlagOn()) return { error: "Developer tools are off." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("dev_pass_day");
+  if (error) return { error: error.message };
+  refresh();
+  return {};
+}

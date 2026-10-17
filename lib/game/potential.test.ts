@@ -124,7 +124,7 @@ describe("calculatePotential", () => {
   });
 
   it("rises with big gains, but only one step at a time", () => {
-    // +80 a week combined would be SS.
+    // +80 a week combined would be S.
     const history = [week(W[4], 50), week(W[5], 70)];
     expect(calculatePotential(history, "C")).toBe("B");
     expect(calculatePotential(history, "B")).toBe("A");
@@ -137,7 +137,7 @@ describe("calculatePotential", () => {
 
   it("stays put once it reaches the band", () => {
     const history = [week(W[4], 50), week(W[5], 70)];
-    expect(calculatePotential(history, "SS")).toBe("SS");
+    expect(calculatePotential(history, "S")).toBe("S");
   });
 
   it("always gives a grade on the ladder", () => {

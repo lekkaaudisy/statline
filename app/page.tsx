@@ -26,10 +26,21 @@ type HistoryRow = { week_start: string; potential: number } & Record<
 
 async function Status() {
   const supabase = await createClient();
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("display_name, main_class, second_class, onboarded_at, sick_since")
     .maybeSingle();
+
+  // A failed read is not "not onboarded": redirecting would bounce between
+  // here and /onboarding forever (e.g. if a migration is not applied yet).
+  if (error) {
+    console.error("Could not load profile:", error.message);
+    return (
+      <p role="alert" className="text-base text-muted">
+        The System could not load your status. Try again in a moment.
+      </p>
+    );
+  }
 
   // New players go through onboarding first.
   if (!profile?.onboarded_at) redirect("/onboarding");
